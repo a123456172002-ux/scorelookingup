@@ -4,8 +4,31 @@ const MGMT_SPREADSHEET_ID = '15VEkkkt9G4FlS-xkOCYSZTvv3sJWeJoTUVSGvURWs-k'; // �
 const SCORE_SPREADSHEET_ID = '13nE4cNv-Fk6DUWoWsX6d76IZ5GsbV86kjaGbQfiaRA0'; // 成績查詢試算表
 const SHEET_NAME = '總表';
 
-// 1. 網頁進入點 (統一入口)
-function doGet() {
+// 1. 網頁進入點 (同時支援 網頁載入 + 外部 API 查詢)
+function doGet(e) {
+  // 判斷是否為來自 GitHub / 外部 HTML 的 AJAX 查詢請求
+  if (e && e.parameter && e.parameter.action) {
+    var action = e.parameter.action;
+    var result = {};
+
+    if (action === "getSystemStatus") {
+      result = getSystemStatus();
+    } else if (action === "queryScore") {
+      var studentId = e.parameter.id || "";
+      result = queryScore(studentId);
+    } else if (action === "getClassList") {
+      result = getClassList();
+    } else if (action === "queryClassScores") {
+      var className = e.parameter.className || "";
+      result = queryClassScores(className);
+    }
+
+    // 回傳 JSON 格式給外部網頁
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 預設開啓 HTML 網頁 (直接訪問 Google Apps Script 網址時)
   return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('成績管理與查詢系統')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
